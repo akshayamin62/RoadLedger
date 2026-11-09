@@ -16,15 +16,23 @@ export const createParty = asyncHandler(async (req: Request, res: Response) => {
     company: "JAY_ROADWAYS" | "JAY_INFRA";
   };
 
-  const duplicate = await Party.findOne({ userId, gstNumber });
-  if (duplicate) throw new ConflictError("This GST number already exists");
+  const normalizedGst = (gstNumber ?? "").trim().toUpperCase();
+  if (normalizedGst) {
+    const duplicate = await Party.findOne({ userId, gstNumber: normalizedGst });
+    if (duplicate) throw new ConflictError("This GST number already exists");
+  }
 
-  const party = await Party.create({ userId, name, gstNumber, company });
+  const party = await Party.create({
+    userId,
+    name,
+    gstNumber: normalizedGst,
+    company,
+  });
   await logActivity({
     userId,
     action: "CREATED",
     module: "PARTY",
-    description: `Added party ${name} (${gstNumber})`,
+    description: normalizedGst ? `Added party ${name} (${normalizedGst})` : `Added party ${name}`,
     relatedRecordId: party.id,
     performedBy: req.auth!.email,
   });
@@ -68,11 +76,18 @@ export const updateParty = asyncHandler(async (req: Request, res: Response) => {
     company: "JAY_ROADWAYS" | "JAY_INFRA";
   };
 
-  const duplicate = await Party.findOne({ userId, gstNumber, _id: { $ne: party._id } });
-  if (duplicate) throw new ConflictError("This GST number already exists");
+  const normalizedGst = (gstNumber ?? "").trim().toUpperCase();
+  if (normalizedGst) {
+    const duplicate = await Party.findOne({
+      userId,
+      gstNumber: normalizedGst,
+      _id: { $ne: party._id },
+    });
+    if (duplicate) throw new ConflictError("This GST number already exists");
+  }
 
   party.name = name;
-  party.gstNumber = gstNumber;
+  party.gstNumber = normalizedGst;
   party.company = company;
   await party.save();
 

@@ -30,7 +30,7 @@ export function serializeParty(party: PartyDocument) {
   return {
     id: party.id,
     name: party.name,
-    gstNumber: party.gstNumber,
+    gstNumber: party.gstNumber || "",
     company: party.company,
     createdAt: party.createdAt,
     updatedAt: party.updatedAt,
@@ -78,6 +78,12 @@ export function serializeTransaction(tx: TransactionDocument) {
 }
 
 export function serializeSparePart(part: SparePartDocument) {
+  const payments = part.payments ?? [];
+  const totalPaidPaise = payments.reduce((sum, payment) => sum + payment.amountPaise, 0);
+  const pendingAmountPaise = Math.max(0, part.amountPaise - totalPaidPaise);
+  const paymentStatus =
+    totalPaidPaise === 0 ? "PENDING" : pendingAmountPaise === 0 ? "PAID" : "PARTIALLY_PAID";
+
   return {
     id: part.id,
     partName: part.partName,
@@ -85,6 +91,17 @@ export function serializeSparePart(part: SparePartDocument) {
     purchaseDate: part.purchaseDate,
     amount: paiseToRupees(part.amountPaise),
     amountPaise: part.amountPaise,
+    payments: payments.map((payment) => ({
+      id: (payment as { _id?: { toString(): string } })._id?.toString(),
+      amount: paiseToRupees(payment.amountPaise),
+      amountPaise: payment.amountPaise,
+      receivedDate: payment.receivedDate,
+      paymentMode: payment.paymentMode,
+      createdAt: payment.createdAt,
+    })),
+    totalPaidAmount: paiseToRupees(totalPaidPaise),
+    pendingAmount: paiseToRupees(pendingAmountPaise),
+    paymentStatus: part.paymentStatus ?? paymentStatus,
     createdAt: part.createdAt,
     updatedAt: part.updatedAt,
   };

@@ -24,18 +24,20 @@ export type Vehicle = {
 export type Party = {
   id: string;
   name: string;
-  gstNumber: string;
+  gstNumber?: string;
   company: "JAY_ROADWAYS" | "JAY_INFRA";
   createdAt: string;
   updatedAt: string;
 };
+
+export type PaymentMode = "NEFT" | "UPI" | "CASH" | "CHEQUE";
 
 export type Payment = {
   id?: string;
   amount: number;
   amountPaise: number;
   receivedDate: string;
-  paymentMode: "NEFT" | "UPI" | "CASH";
+  paymentMode: PaymentMode;
   createdAt: string;
 };
 
@@ -64,6 +66,10 @@ export type SparePart = {
   providerName: string;
   purchaseDate: string;
   amount: number;
+  payments: Payment[];
+  totalPaidAmount: number;
+  pendingAmount: number;
+  paymentStatus: "PENDING" | "PARTIALLY_PAID" | "PAID";
   createdAt: string;
 };
 

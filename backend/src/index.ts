@@ -6,6 +6,8 @@ import morgan from "morgan";
 import { connectDatabase } from "./config/db.js";
 import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
+import { migratePartyGstIndex } from "./scripts/migratePartyGstIndex.js";
+import { migrateSparePartPayments } from "./scripts/migrateSparePayments.js";
 import authRoutes from "./routes/auth.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import historyRoutes from "./routes/history.routes.js";
@@ -46,6 +48,8 @@ app.use(errorHandler);
 
 async function start() {
   await connectDatabase();
+  await migratePartyGstIndex();
+  await migrateSparePartPayments();
   app.listen(env.port, () => {
     console.log(`RoadLedger API listening on port ${env.port}`);
   });

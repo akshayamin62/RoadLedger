@@ -91,3 +91,8 @@ export const analyticsQuerySchema = z.object({
   fromDate: z.string().min(1),
   toDate: z.string().min(1),
 });
+
+export const paymentParamsSchema = z.object({
+  id: objectIdSchema,
+  paymentId: objectIdSchema,
+});

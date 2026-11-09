@@ -52,7 +52,7 @@ export function Sidebar({
           <X className="h-5 w-5" />
         </button>
       </div>
-      <nav className="flex-1 space-y-1 px-3">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3">
         {NAV.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -93,7 +93,12 @@ export function Sidebar({
       </button>
       {mobileOpen ? <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={() => setMobileOpen(false)} /> : null}
       <aside className={cn("fixed inset-y-0 left-0 z-50 w-72 md:hidden", mobileOpen ? "block" : "hidden")}>{content}</aside>
-      <aside className={cn("hidden h-screen shrink-0 md:block", collapsed ? "w-[84px]" : "w-72")}>
+      <aside
+        className={cn(
+          "sticky top-0 hidden h-screen shrink-0 self-start md:block",
+          collapsed ? "w-[84px]" : "w-72",
+        )}
+      >
         <div className="relative h-full">
           {content}
           <button

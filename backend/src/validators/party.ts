@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { COMPANIES } from "../models/Party.js";
-import { gstSchema } from "./common.js";
+import { optionalGstSchema } from "./common.js";
 
 export const partyBodySchema = z.object({
   name: z.string().trim().min(2).max(120),
-  gstNumber: gstSchema,
+  gstNumber: optionalGstSchema.default(""),
   company: z.enum(COMPANIES),
 });
 

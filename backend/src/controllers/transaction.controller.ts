@@ -5,7 +5,7 @@ import { Counter, nextSequence } from "../models/Counter.js";
 import { Transaction, type PaymentMode } from "../models/Transaction.js";
 import { Vehicle } from "../models/Vehicle.js";
 import { logActivity } from "../services/activity.service.js";
-import { applyPaymentTotals } from "../services/payment.service.js";
+import { applyPaymentTotals, emptyPaymentModeBreakdown } from "../services/payment.service.js";
 import { paginated, success } from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { endOfDay, monthKey, startOfDay } from "../utils/dates.js";
@@ -281,6 +281,45 @@ export const addPayment = asyncHandler(async (req: Request, res: Response) => {
   return success(res, serializeTransaction(tx), 201, "Payment recorded");
 });
 
+export const updatePayment = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.auth!.userId;
+  const { amount, receivedDate, paymentMode } = req.body as {
+    amount: number;
+    receivedDate: Date;
+    paymentMode: PaymentMode;
+  };
+
+  const tx = await Transaction.findOne({ _id: req.params.id, userId });
+  if (!tx) throw new NotFoundError("Transaction not found");
+  const payment = tx.payments.find((entry) => entry._id?.toString() === req.params.paymentId);
+  if (!payment) throw new NotFoundError("Payment not found");
+
+  const amountPaise = rupeesToPaise(amount);
+  const others = tx.payments
+    .filter((entry) => entry._id?.toString() !== req.params.paymentId)
+    .reduce((sum, entry) => sum + entry.amountPaise, 0);
+  if (others + amountPaise > tx.billAmountPaise) {
+    throw new BadRequestError("Total payments cannot exceed bill amount");
+  }
+
+  payment.amountPaise = amountPaise;
+  payment.receivedDate = receivedDate;
+  payment.paymentMode = paymentMode;
+  applyPaymentTotals(tx);
+  await tx.save();
+  await tx.populate(populateTx());
+
+  await logActivity({
+    userId,
+    action: "UPDATED",
+    module: "PAYMENT",
+    description: `Updated payment of ₹${amount.toFixed(2)} (${paymentMode}) for bill ${tx.billNumber}`,
+    relatedRecordId: tx.id,
+    performedBy: req.auth!.email,
+  });
+  return success(res, serializeTransaction(tx), 200, "Payment updated");
+});
+
 export const transactionAnalytics = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.auth!.userId;
   const from = startOfDay(new Date(String(req.query.fromDate)));
@@ -312,9 +351,11 @@ export const transactionAnalytics = asyncHandler(async (req: Request, res: Respo
   ]);
 
   const totalReceivedPaise = collectionAgg.reduce((sum, row) => sum + row.totalPaise, 0);
-  const paymentModeBreakdown = { NEFT: 0, UPI: 0, CASH: 0 };
+  const paymentModeBreakdown = emptyPaymentModeBreakdown();
   for (const row of collectionAgg) {
-    paymentModeBreakdown[row._id as PaymentMode] = row.totalPaise / 100;
+    if (row._id in paymentModeBreakdown) {
+      paymentModeBreakdown[row._id as PaymentMode] = row.totalPaise / 100;
+    }
   }
 
   const monthlyBillingMap = new Map<string, number>();

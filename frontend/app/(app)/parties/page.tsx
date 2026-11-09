@@ -52,7 +52,7 @@ export default function PartiesPage() {
 
   const openEdit = (party: Party) => {
     setEditing(party);
-    setForm({ name: party.name, gstNumber: party.gstNumber, company: party.company });
+    setForm({ name: party.name, gstNumber: party.gstNumber ?? "", company: party.company });
     setErrors({});
     setOpen(true);
   };
@@ -61,14 +61,15 @@ export default function PartiesPage() {
     event.preventDefault();
     const next: Record<string, string> = {};
     if (form.name.trim().length < 2) next.name = "Party name is required";
-    if (!GST_REGEX.test(form.gstNumber.toUpperCase())) next.gstNumber = "Invalid GST number";
+    const gst = form.gstNumber.trim().toUpperCase();
+    if (gst && !GST_REGEX.test(gst)) next.gstNumber = "Invalid GST number";
     setErrors(next);
     if (Object.keys(next).length) return;
     setSaving(true);
     try {
       await api(editing ? `/api/parties/${editing.id}` : "/api/parties", {
         method: editing ? "PUT" : "POST",
-        body: JSON.stringify({ ...form, gstNumber: form.gstNumber.toUpperCase() }),
+        body: JSON.stringify({ ...form, gstNumber: gst }),
       });
       toast.success(editing ? "Party updated" : "Party added");
       setOpen(false);
@@ -129,7 +130,7 @@ export default function PartiesPage() {
                 {items.map((party) => (
                   <tr key={party.id} className="border-t border-slate-100">
                     <td className="py-3 font-medium text-navy">{party.name}</td>
-                    <td>{party.gstNumber}</td>
+                    <td>{party.gstNumber || "—"}</td>
                     <td>{companyLabel(party.company)}</td>
                     <td>{formatDate(party.createdAt)}</td>
                     <td className="text-right">
@@ -156,11 +157,11 @@ export default function PartiesPage() {
           <Field label="Party name" required error={errors.name}>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </Field>
-          <Field label="GST number" required error={errors.gstNumber}>
+          <Field label="GST number" error={errors.gstNumber}>
             <Input
               value={form.gstNumber}
               onChange={(e) => setForm({ ...form, gstNumber: e.target.value.toUpperCase() })}
-              placeholder="24ABCDE1234F1Z5"
+              placeholder="Optional — 24ABCDE1234F1Z5"
             />
           </Field>
           <Field label="Company / business belongs to" required>

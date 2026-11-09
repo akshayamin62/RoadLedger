@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/badge";
 import { companyLabel, formatDate, formatINR, monthStart, todayIso } from "@/lib/utils";
 import { api, qs } from "@/services/api";
-import type { Transaction } from "@/types";
+import type { SparePart, Transaction } from "@/types";
 import { Banknote, Truck, Users, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -22,6 +22,8 @@ type Summary = {
     totalAmountReceived: number;
     totalPendingAmount: number;
     totalSparePartsExpenses: number;
+    totalSparePartsPaid: number;
+    totalSparePartsPending: number;
   };
   recentTransactions: Transaction[];
   pendingPayments: Transaction[];
@@ -35,10 +37,26 @@ type Summary = {
     paymentMode: string;
   }[];
   vehicleWise: { vehicleId: string; registrationNumber: string; transactions: number; billAmount: number }[];
+  recentSpareParts: SparePart[];
+  pendingSparePayments: SparePart[];
+  recentSparePayments: {
+    sparePartId: string;
+    partName: string;
+    providerName: string;
+    amount: number;
+    receivedDate: string;
+    paymentMode: string;
+  }[];
+  providerWise: { providerName: string; records: number; billAmount: number; paidAmount: number }[];
 };
 
 type Charts = {
-  monthly: { billing: { month: string; amount: number }[]; collections: { month: string; amount: number }[] };
+  monthly: {
+    billing: { month: string; amount: number }[];
+    collections: { month: string; amount: number }[];
+    spareBilling: { month: string; amount: number }[];
+    sparePayments: { month: string; amount: number }[];
+  };
 };
 
 export default function DashboardPage() {
@@ -71,7 +89,10 @@ export default function DashboardPage() {
   }, [fromDate, toDate]);
 
   const months = Array.from(
-    new Set([...(charts?.monthly.billing.map((x) => x.month) ?? []), ...(charts?.monthly.collections.map((x) => x.month) ?? [])]),
+    new Set([
+      ...(charts?.monthly.billing.map((x) => x.month) ?? []),
+      ...(charts?.monthly.collections.map((x) => x.month) ?? []),
+    ]),
   ).sort();
   const chartData = months.map((month) => ({
     month,
@@ -79,14 +100,27 @@ export default function DashboardPage() {
     collections: charts?.monthly.collections.find((x) => x.month === month)?.amount ?? 0,
   }));
 
+  const spareMonths = Array.from(
+    new Set([
+      ...(charts?.monthly.spareBilling.map((x) => x.month) ?? []),
+      ...(charts?.monthly.sparePayments.map((x) => x.month) ?? []),
+    ]),
+  ).sort();
+  const spareChartData = spareMonths.map((month) => ({
+    month,
+    billing: charts?.monthly.spareBilling.find((x) => x.month === month)?.amount ?? 0,
+    payments: charts?.monthly.sparePayments.find((x) => x.month === month)?.amount ?? 0,
+  }));
+
   const cards = [
-    { label: "Total Vehicles", value: summary?.cards.totalVehicles ?? 0, icon: Truck },
-    { label: "Total Parties", value: summary?.cards.totalParties ?? 0, icon: Users },
-    { label: "Total Transactions", value: summary?.cards.totalTransactions ?? 0, icon: Wallet },
-    { label: "Total Bill Amount", value: formatINR(summary?.cards.totalBillAmount ?? 0), icon: Banknote },
+    { label: "Total Vehicles", value: summary?.cards.totalVehicles ?? 0 },
+    { label: "Total Parties", value: summary?.cards.totalParties ?? 0 },
+    { label: "Total Transactions", value: summary?.cards.totalTransactions ?? 0 },
+    { label: "Total Bill Amount", value: formatINR(summary?.cards.totalBillAmount ?? 0) },
     { label: "Amount Received", value: formatINR(summary?.cards.totalAmountReceived ?? 0), tone: "text-emerald-700" },
     { label: "Pending Amount", value: formatINR(summary?.cards.totalPendingAmount ?? 0), tone: "text-red-600" },
     { label: "Spare Parts Expenses", value: formatINR(summary?.cards.totalSparePartsExpenses ?? 0), tone: "text-red-600" },
+    { label: "Spare Parts Amount Paid", value: formatINR(summary?.cards.totalSparePartsPaid ?? 0), tone: "text-emerald-700" },
   ];
 
   return (
@@ -110,7 +144,7 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {loading
-          ? Array.from({ length: 7 }).map((_, i) => <Skeleton key={i} className="h-28" />)
+          ? Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-28" />)
           : cards.map((card) => (
               <Card key={card.label}>
                 <p className="text-sm text-slate-500">{card.label}</p>
@@ -238,6 +272,129 @@ export default function DashboardPage() {
             </table>
           ) : (
             <EmptyState title="No vehicle activity" description="Vehicle summaries appear after billing." />
+          )}
+        </Card>
+      </div>
+
+      <Card>
+        <h3 className="mb-4 font-semibold text-navy">Monthly spare parts billing and payments</h3>
+        <div className="h-72">
+          {spareChartData.length ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={spareChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip formatter={(value) => formatINR(Number(value))} />
+                <Legend />
+                <Line type="monotone" dataKey="billing" stroke="#DC2626" name="Spare billing" />
+                <Line type="monotone" dataKey="payments" stroke="#D97706" name="Spare payments" />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <EmptyState title="No spare part chart data" description="Add spare part purchases and payments to see trends." />
+          )}
+        </div>
+      </Card>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card>
+          <h3 className="mb-4 font-semibold text-navy">Recent spare parts</h3>
+          {summary?.recentSpareParts?.length ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-slate-500">
+                  <tr>
+                    <th className="pb-2">Part Name/Bill no.</th>
+                    <th className="pb-2">Party name</th>
+                    <th className="pb-2">Amount</th>
+                    <th className="pb-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summary.recentSpareParts.map((row) => (
+                    <tr key={row.id} className="border-t border-slate-100">
+                      <td className="py-2">{row.partName}</td>
+                      <td>{row.providerName}</td>
+                      <td>{formatINR(row.amount)}</td>
+                      <td>
+                        <StatusBadge status={row.paymentStatus} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <EmptyState title="No spare parts yet" description="Record purchases to track vendor bills." />
+          )}
+        </Card>
+        <Card>
+          <h3 className="mb-4 font-semibold text-navy">Recent spare part payments</h3>
+          {summary?.recentSparePayments?.length ? (
+            <div className="space-y-3">
+              {summary.recentSparePayments.map((row) => (
+                <div key={`${row.sparePartId}-${row.receivedDate}-${row.amount}`} className="flex items-center justify-between rounded-xl bg-orange-50 px-3 py-2">
+                  <div>
+                    <p className="text-sm font-medium text-navy">{row.partName}</p>
+                    <p className="text-xs text-slate-500">
+                      {row.providerName} · {row.paymentMode} · {formatDate(row.receivedDate)}
+                    </p>
+                  </div>
+                  <p className="font-semibold text-orange-700">{formatINR(row.amount)}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="No spare payments yet" description="Vendor payments will appear here." />
+          )}
+        </Card>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card>
+          <h3 className="mb-4 font-semibold text-navy">Pending spare part payments</h3>
+          {summary?.pendingSparePayments?.length ? (
+            <div className="space-y-3">
+              {summary.pendingSparePayments.map((row) => (
+                <div key={row.id} className="flex items-center justify-between rounded-xl bg-red-50 px-3 py-2">
+                  <div>
+                    <p className="text-sm font-medium text-navy">{row.partName}</p>
+                    <p className="text-xs text-slate-500">{row.providerName}</p>
+                  </div>
+                  <p className="font-semibold text-red-700">{formatINR(row.pendingAmount)}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState title="No pending spare dues" description="All spare part bills are fully paid." />
+          )}
+        </Card>
+        <Card>
+          <h3 className="mb-4 font-semibold text-navy">Provider-wise spare summary</h3>
+          {summary?.providerWise?.length ? (
+            <table className="w-full text-sm">
+              <thead className="text-left text-slate-500">
+                <tr>
+                  <th className="pb-2">Party name</th>
+                  <th className="pb-2">Records</th>
+                  <th className="pb-2">Bill</th>
+                  <th className="pb-2">Paid</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.providerWise.map((row) => (
+                  <tr key={row.providerName} className="border-t border-slate-100">
+                    <td className="py-2">{row.providerName}</td>
+                    <td>{row.records}</td>
+                    <td>{formatINR(row.billAmount)}</td>
+                    <td className="text-emerald-700">{formatINR(row.paidAmount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <EmptyState title="No provider activity" description="Provider summaries appear after spare part billing." />
           )}
         </Card>
       </div>

@@ -38,7 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-surface">
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((value) => !value)} onLogout={logout} userName={user.name} />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 overflow-x-hidden">
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 px-4 py-4 backdrop-blur md:px-8">
           <div className="flex items-center justify-between pl-12 md:pl-0">
             <div>

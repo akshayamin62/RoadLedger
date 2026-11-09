@@ -1,12 +1,13 @@
 import mongoose, { Schema, Types } from "mongoose";
 
-export const PAYMENT_MODES = ["NEFT", "UPI", "CASH"] as const;
+export const PAYMENT_MODES = ["NEFT", "UPI", "CASH", "CHEQUE"] as const;
 export type PaymentMode = (typeof PAYMENT_MODES)[number];
 
 export const PAYMENT_STATUSES = ["PENDING", "PARTIALLY_PAID", "PAID"] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
 export interface PaymentEntry {
+  _id?: Types.ObjectId;
   amountPaise: number;
   receivedDate: Date;
   paymentMode: PaymentMode;
@@ -30,7 +31,7 @@ export interface TransactionDocument extends mongoose.Document {
   updatedAt: Date;
 }
 
-const paymentSchema = new Schema<PaymentEntry>(
+export const paymentSchema = new Schema<PaymentEntry>(
   {
     amountPaise: { type: Number, required: true, min: 1 },
     receivedDate: { type: Date, required: true },

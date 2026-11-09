@@ -62,6 +62,7 @@ export default function HistoryPage() {
             <option value="UPDATED">Updated</option>
             <option value="DELETED">Deleted</option>
             <option value="PAYMENT_RECEIVED">Payment received</option>
+            <option value="PAYMENT_MADE">Payment made</option>
           </Select>
           <Input type="date" value={filters.fromDate} onChange={(e) => setFilters({ ...filters, page: 1, fromDate: e.target.value })} />
           <Input type="date" value={filters.toDate} onChange={(e) => setFilters({ ...filters, page: 1, toDate: e.target.value })} />

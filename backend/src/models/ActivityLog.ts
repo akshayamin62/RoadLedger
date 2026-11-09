@@ -17,6 +17,7 @@ export const ACTIVITY_ACTIONS = [
   "UPDATED",
   "DELETED",
   "PAYMENT_RECEIVED",
+  "PAYMENT_MADE",
 ] as const;
 export type ActivityAction = (typeof ACTIVITY_ACTIONS)[number];
 

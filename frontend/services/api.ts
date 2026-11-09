@@ -13,7 +13,15 @@ type ApiSuccess<T> = {
   message: string;
   data: T;
   meta?: unknown;
-  summary?: { totalExpenditure: number; monthlyExpenditure: { month: string; amount: number }[] };
+  summary?: {
+    totalExpenditure: number;
+    totalPaid?: number;
+    totalPending?: number;
+    totalRecords?: number;
+    monthlyExpenditure: { month: string; amount: number }[];
+    monthlyPaid?: { month: string; amount: number }[];
+    paymentModeBreakdown?: { NEFT: number; UPI: number; CASH: number; CHEQUE: number };
+  };
 };
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<ApiSuccess<T>> {

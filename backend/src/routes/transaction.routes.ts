@@ -7,6 +7,7 @@ import {
   listTransactions,
   nextSerial,
   transactionAnalytics,
+  updatePayment,
   updateTransaction,
 } from "../controllers/transaction.controller.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -15,6 +16,7 @@ import {
   analyticsQuerySchema,
   createTransactionSchema,
   paymentInputSchema,
+  paymentParamsSchema,
   transactionQuerySchema,
   updateTransactionSchema,
 } from "../validators/transaction.js";
@@ -31,5 +33,11 @@ router.get("/:id", validate(idParamsSchema, "params"), getTransaction);
 router.put("/:id", validate(idParamsSchema, "params"), validate(updateTransactionSchema), updateTransaction);
 router.delete("/:id", validate(idParamsSchema, "params"), deleteTransaction);
 router.post("/:id/payments", validate(idParamsSchema, "params"), validate(paymentInputSchema), addPayment);
+router.put(
+  "/:id/payments/:paymentId",
+  validate(paymentParamsSchema, "params"),
+  validate(paymentInputSchema),
+  updatePayment,
+);
 
 export default router;

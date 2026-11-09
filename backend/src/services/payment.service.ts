@@ -1,3 +1,4 @@
+import type { SparePartDocument } from "../models/SparePart.js";
 import type { PaymentEntry, PaymentStatus, TransactionDocument } from "../models/Transaction.js";
 
 export function computePaymentTotals(
@@ -18,9 +19,21 @@ export function computePaymentTotals(
 }
 
 export function applyPaymentTotals(doc: TransactionDocument) {
-  const totals = computePaymentTotals(doc.billAmountPaise, doc.payments);
+  const totals = computePaymentTotals(doc.billAmountPaise, doc.payments ?? []);
   doc.totalReceivedPaise = totals.totalReceivedPaise;
   doc.pendingAmountPaise = totals.pendingAmountPaise;
   doc.paymentStatus = totals.paymentStatus;
   return totals;
+}
+
+export function applySparePaymentTotals(doc: SparePartDocument) {
+  const totals = computePaymentTotals(doc.amountPaise, doc.payments ?? []);
+  doc.totalPaidPaise = totals.totalReceivedPaise;
+  doc.pendingAmountPaise = totals.pendingAmountPaise;
+  doc.paymentStatus = totals.paymentStatus;
+  return totals;
+}
+
+export function emptyPaymentModeBreakdown() {
+  return { NEFT: 0, UPI: 0, CASH: 0, CHEQUE: 0 };
 }

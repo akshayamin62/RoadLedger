@@ -12,7 +12,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { Select } from "@/components/ui/select";
 import { companyLabel, exportCsv, formatDate, formatINR, monthStart, toInputDate, todayIso } from "@/lib/utils";
 import { ApiError, api, qs } from "@/services/api";
-import type { ApiList, Party, Transaction, Vehicle } from "@/types";
+import type { ApiList, Party, PaymentMode, Transaction, Vehicle } from "@/types";
 import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -43,7 +43,7 @@ type Analytics = {
   charts: {
     monthlyBilling: { month: string; amount: number }[];
     monthlyCollection: { month: string; amount: number }[];
-    paymentModeBreakdown: { NEFT: number; UPI: number; CASH: number };
+    paymentModeBreakdown: { NEFT: number; UPI: number; CASH: number; CHEQUE: number };
   };
   partyWise: { partyId: string; name: string; company: string; billAmount: number }[];
   vehicleWise: { vehicleId: string; registrationNumber: string; vehicleType: string; billAmount: number }[];
@@ -59,7 +59,7 @@ const emptyTx = {
   billAmount: "",
   paymentReceivedDate: "",
   paymentReceivedAmount: "0",
-  paymentMode: "" as "" | "NEFT" | "UPI" | "CASH",
+  paymentMode: "" as "" | PaymentMode,
 };
 
 export default function TransactionsPage() {
@@ -88,7 +88,8 @@ export default function TransactionsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<Transaction | null>(null);
-  const [paymentForm, setPaymentForm] = useState({ amount: "", receivedDate: todayIso(), paymentMode: "NEFT" as "NEFT" | "UPI" | "CASH" });
+  const [paymentForm, setPaymentForm] = useState({ amount: "", receivedDate: todayIso(), paymentMode: "NEFT" as PaymentMode });
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
 
   const loadLookups = async () => {
     const [v, p] = await Promise.all([
@@ -213,22 +214,26 @@ export default function TransactionsPage() {
     }
   };
 
-  const addPayment = async (event: FormEvent) => {
+  const savePayment = async (event: FormEvent) => {
     event.preventDefault();
     if (!viewing) return;
     const amount = Number(paymentForm.amount);
     if (!amount || amount <= 0) return toast.error("Payment amount must be greater than zero");
     try {
-      const res = await api<Transaction>(`/api/transactions/${viewing.id}/payments`, {
-        method: "POST",
+      const path = editingPaymentId
+        ? `/api/transactions/${viewing.id}/payments/${editingPaymentId}`
+        : `/api/transactions/${viewing.id}/payments`;
+      const res = await api<Transaction>(path, {
+        method: editingPaymentId ? "PUT" : "POST",
         body: JSON.stringify(paymentForm),
       });
       setViewing(res.data);
       setPaymentForm({ amount: "", receivedDate: todayIso(), paymentMode: "NEFT" });
-      toast.success("Payment recorded");
+      setEditingPaymentId(null);
+      toast.success(editingPaymentId ? "Payment updated" : "Payment recorded");
       await Promise.all([loadTable(), loadAnalytics()]);
     } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : "Unable to record payment");
+      toast.error(error instanceof ApiError ? error.message : "Unable to save payment");
     }
   };
 
@@ -246,19 +251,47 @@ export default function TransactionsPage() {
 
   const exportRows = async () => {
     const res = await api<Transaction[]>(`/api/transactions${qs({ ...filters, page: 1, limit: 500 })}`);
-    exportCsv("transactions.csv", res.data.map((tx) => ({
-      serialNumber: tx.serialNumber,
-      billNumber: tx.billNumber,
-      vehicle: tx.vehicle?.registrationNumber,
-      party: tx.party?.name,
-      company: tx.party?.company,
-      fromDate: formatDate(tx.fromDate),
-      toDate: formatDate(tx.toDate),
-      billAmount: tx.billAmount,
-      received: tx.totalReceivedAmount,
-      pending: tx.pendingAmount,
-      status: tx.paymentStatus,
-    })));
+    const rows: Record<string, unknown>[] = [];
+    for (const tx of res.data) {
+      if (!tx.payments?.length) {
+        rows.push({
+          serialNumber: tx.serialNumber,
+          billNumber: tx.billNumber,
+          vehicle: tx.vehicle?.registrationNumber,
+          party: tx.party?.name,
+          company: tx.party?.company,
+          fromDate: formatDate(tx.fromDate),
+          toDate: formatDate(tx.toDate),
+          billAmount: tx.billAmount,
+          paymentAmount: 0,
+          paymentDate: "",
+          paymentMode: "",
+          totalReceived: tx.totalReceivedAmount,
+          pending: tx.pendingAmount,
+          status: tx.paymentStatus,
+        });
+      } else {
+        for (const payment of tx.payments) {
+          rows.push({
+            serialNumber: tx.serialNumber,
+            billNumber: tx.billNumber,
+            vehicle: tx.vehicle?.registrationNumber,
+            party: tx.party?.name,
+            company: tx.party?.company,
+            fromDate: formatDate(tx.fromDate),
+            toDate: formatDate(tx.toDate),
+            billAmount: tx.billAmount,
+            paymentAmount: payment.amount,
+            paymentDate: formatDate(payment.receivedDate),
+            paymentMode: payment.paymentMode,
+            totalReceived: tx.totalReceivedAmount,
+            pending: tx.pendingAmount,
+            status: tx.paymentStatus,
+          });
+        }
+      }
+    }
+    exportCsv("transactions.csv", rows);
   };
 
   const pieData = useMemo(
@@ -268,6 +301,7 @@ export default function TransactionsPage() {
             { name: "NEFT", value: analytics.charts.paymentModeBreakdown.NEFT },
             { name: "UPI", value: analytics.charts.paymentModeBreakdown.UPI },
             { name: "Cash", value: analytics.charts.paymentModeBreakdown.CASH },
+            { name: "Cheque", value: analytics.charts.paymentModeBreakdown.CHEQUE },
           ]
         : [],
     [analytics],
@@ -353,7 +387,18 @@ export default function TransactionsPage() {
               <PieChart>
                 <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={80} label>
                   {pieData.map((entry) => (
-                    <Cell key={entry.name} fill={entry.name === "NEFT" ? "#1D4ED8" : entry.name === "UPI" ? "#0B1F3A" : "#059669"} />
+                    <Cell
+                      key={entry.name}
+                      fill={
+                        entry.name === "NEFT"
+                          ? "#1D4ED8"
+                          : entry.name === "UPI"
+                            ? "#0B1F3A"
+                            : entry.name === "Cheque"
+                              ? "#D97706"
+                              : "#059669"
+                      }
+                    />
                   ))}
                 </Pie>
                 <Tooltip formatter={(value) => formatINR(Number(value))} />
@@ -475,7 +520,15 @@ export default function TransactionsPage() {
                       <StatusBadge status={tx.paymentStatus} />
                     </td>
                     <td className="text-right">
-                      <Button size="icon" variant="ghost" onClick={() => setViewing(tx)}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => {
+                          setViewing(tx);
+                          setEditingPaymentId(null);
+                          setPaymentForm({ amount: "", receivedDate: todayIso(), paymentMode: "NEFT" });
+                        }}
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
                       <Button size="icon" variant="ghost" onClick={() => openEdit(tx)}>
@@ -547,6 +600,7 @@ export default function TransactionsPage() {
                   <option value="NEFT">NEFT</option>
                   <option value="UPI">UPI</option>
                   <option value="CASH">Cash</option>
+                  <option value="CHEQUE">Cheque</option>
                 </Select>
               </Field>
             </>
@@ -585,6 +639,7 @@ export default function TransactionsPage() {
                       <th className="pb-2">Date</th>
                       <th className="pb-2">Mode</th>
                       <th className="pb-2">Amount</th>
+                      <th className="pb-2 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -593,6 +648,22 @@ export default function TransactionsPage() {
                         <td className="py-2">{formatDate(payment.receivedDate)}</td>
                         <td>{payment.paymentMode}</td>
                         <td>{formatINR(payment.amount)}</td>
+                        <td className="text-right">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingPaymentId(payment.id ?? null);
+                              setPaymentForm({
+                                amount: String(payment.amount),
+                                receivedDate: toInputDate(payment.receivedDate),
+                                paymentMode: payment.paymentMode,
+                              });
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -601,8 +672,8 @@ export default function TransactionsPage() {
                 <p className="text-sm text-slate-500">No payments recorded yet.</p>
               )}
             </div>
-            {viewing.pendingAmount > 0 ? (
-              <form onSubmit={addPayment} className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-4">
+            {(viewing.pendingAmount > 0 || editingPaymentId) ? (
+              <form onSubmit={savePayment} className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-4">
                 <Field label="Amount">
                   <Input type="number" min="0.01" step="0.01" value={paymentForm.amount} onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })} />
                 </Field>
@@ -610,15 +681,29 @@ export default function TransactionsPage() {
                   <Input type="date" value={paymentForm.receivedDate} onChange={(e) => setPaymentForm({ ...paymentForm, receivedDate: e.target.value })} />
                 </Field>
                 <Field label="Mode">
-                  <Select value={paymentForm.paymentMode} onChange={(e) => setPaymentForm({ ...paymentForm, paymentMode: e.target.value as "NEFT" | "UPI" | "CASH" })}>
+                  <Select value={paymentForm.paymentMode} onChange={(e) => setPaymentForm({ ...paymentForm, paymentMode: e.target.value as PaymentMode })}>
                     <option value="NEFT">NEFT</option>
                     <option value="UPI">UPI</option>
                     <option value="CASH">Cash</option>
+                    <option value="CHEQUE">Cheque</option>
                   </Select>
                 </Field>
-                <div className="flex items-end">
+                <div className="flex items-end gap-2">
+                  {editingPaymentId ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setEditingPaymentId(null);
+                        setPaymentForm({ amount: "", receivedDate: todayIso(), paymentMode: "NEFT" });
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  ) : null}
                   <Button type="submit" className="w-full" variant="success">
-                    Add payment
+                    {editingPaymentId ? "Update" : "Add payment"}
                   </Button>
                 </div>
               </form>
