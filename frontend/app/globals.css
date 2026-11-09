@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: #f4f6f9;
+  color: #0b1f3a;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+input[type="date"] {
+  min-width: 0;
+}
