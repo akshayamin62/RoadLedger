@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { PAYMENT_MODES, PAYMENT_STATUSES } from "../models/Transaction.js";
-import { optionalRupeeAmountSchema, rupeeAmountSchema } from "./common.js";
+import { PAYMENT_MODES, PAYMENT_STATUSES } from "../models/Transaction";
+import { optionalRupeeAmountSchema, rupeeAmountSchema } from "./common";
 
 export const sparePartBodySchema = z
   .object({

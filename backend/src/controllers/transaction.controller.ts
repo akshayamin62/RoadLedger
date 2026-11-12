@@ -1,18 +1,18 @@
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
-import { Party } from "../models/Party.js";
-import { Counter, nextSequence } from "../models/Counter.js";
-import { Transaction, type PaymentMode } from "../models/Transaction.js";
-import { Vehicle } from "../models/Vehicle.js";
-import { logActivity } from "../services/activity.service.js";
-import { applyPaymentTotals, emptyPaymentModeBreakdown } from "../services/payment.service.js";
-import { paginated, success } from "../utils/apiResponse.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { endOfDay, monthKey, startOfDay } from "../utils/dates.js";
-import { BadRequestError, ConflictError, NotFoundError } from "../utils/httpError.js";
-import { rupeesToPaise } from "../utils/money.js";
-import { escapeRegex, parsePagination } from "../utils/pagination.js";
-import { serializeTransaction } from "../utils/serialize.js";
+import { Party } from "../models/Party";
+import { Counter, nextSequence } from "../models/Counter";
+import { Transaction, type PaymentMode } from "../models/Transaction";
+import { Vehicle } from "../models/Vehicle";
+import { logActivity } from "../services/activity.service";
+import { applyPaymentTotals, emptyPaymentModeBreakdown } from "../services/payment.service";
+import { paginated, success } from "../utils/apiResponse";
+import { asyncHandler } from "../utils/asyncHandler";
+import { endOfDay, monthKey, startOfDay } from "../utils/dates";
+import { BadRequestError, ConflictError, NotFoundError } from "../utils/httpError";
+import { rupeesToPaise } from "../utils/money";
+import { escapeRegex, parsePagination } from "../utils/pagination";
+import { serializeTransaction } from "../utils/serialize";
 
 async function assertOwnedVehicle(userId: string, vehicleId: string) {
   const vehicle = await Vehicle.findOne({ _id: vehicleId, userId });

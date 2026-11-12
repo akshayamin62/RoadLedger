@@ -9,9 +9,9 @@ import {
   transactionAnalytics,
   updatePayment,
   updateTransaction,
-} from "../controllers/transaction.controller.js";
-import { requireAuth } from "../middleware/auth.js";
-import { validate } from "../middleware/validate.js";
+} from "../controllers/transaction.controller";
+import { requireAuth } from "../middleware/auth";
+import { validate } from "../middleware/validate";
 import {
   analyticsQuerySchema,
   createTransactionSchema,
@@ -19,8 +19,8 @@ import {
   paymentParamsSchema,
   transactionQuerySchema,
   updateTransactionSchema,
-} from "../validators/transaction.js";
-import { idParamsSchema } from "../validators/vehicle.js";
+} from "../validators/transaction";
+import { idParamsSchema } from "../validators/vehicle";
 
 const router = Router();
 router.use(requireAuth);

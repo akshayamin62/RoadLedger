@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { dashboardCharts, dashboardSummary } from "../controllers/dashboard.controller.js";
-import { requireAuth } from "../middleware/auth.js";
-import { validate } from "../middleware/validate.js";
-import { dashboardQuerySchema } from "../validators/dashboard.js";
+import { dashboardCharts, dashboardSummary } from "../controllers/dashboard.controller";
+import { requireAuth } from "../middleware/auth";
+import { validate } from "../middleware/validate";
+import { dashboardQuerySchema } from "../validators/dashboard";
 
 const router = Router();
 router.use(requireAuth);

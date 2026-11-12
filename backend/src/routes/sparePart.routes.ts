@@ -7,12 +7,12 @@ import {
   listSpareParts,
   updateSparePart,
   updateSparePayment,
-} from "../controllers/sparePart.controller.js";
-import { requireAuth } from "../middleware/auth.js";
-import { validate } from "../middleware/validate.js";
-import { sparePartBodySchema, sparePartQuerySchema, updateSparePartSchema } from "../validators/sparePart.js";
-import { paymentInputSchema, paymentParamsSchema } from "../validators/transaction.js";
-import { idParamsSchema } from "../validators/vehicle.js";
+} from "../controllers/sparePart.controller";
+import { requireAuth } from "../middleware/auth";
+import { validate } from "../middleware/validate";
+import { sparePartBodySchema, sparePartQuerySchema, updateSparePartSchema } from "../validators/sparePart";
+import { paymentInputSchema, paymentParamsSchema } from "../validators/transaction";
+import { idParamsSchema } from "../validators/vehicle";
 
 const router = Router();
 router.use(requireAuth);

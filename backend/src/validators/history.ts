@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ACTIVITY_ACTIONS, ACTIVITY_MODULES } from "../models/ActivityLog.js";
+import { ACTIVITY_ACTIONS, ACTIVITY_MODULES } from "../models/ActivityLog";
 
 export const historyQuerySchema = z.object({
   search: z.string().optional(),

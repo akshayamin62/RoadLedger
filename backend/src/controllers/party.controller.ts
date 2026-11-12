@@ -1,12 +1,12 @@
 import type { Request, Response } from "express";
-import { Party } from "../models/Party.js";
-import { Transaction } from "../models/Transaction.js";
-import { logActivity } from "../services/activity.service.js";
-import { paginated, success } from "../utils/apiResponse.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { ConflictError, NotFoundError } from "../utils/httpError.js";
-import { escapeRegex, parsePagination } from "../utils/pagination.js";
-import { serializeParty } from "../utils/serialize.js";
+import { Party } from "../models/Party";
+import { Transaction } from "../models/Transaction";
+import { logActivity } from "../services/activity.service";
+import { paginated, success } from "../utils/apiResponse";
+import { asyncHandler } from "../utils/asyncHandler";
+import { ConflictError, NotFoundError } from "../utils/httpError";
+import { escapeRegex, parsePagination } from "../utils/pagination";
+import { serializeParty } from "../utils/serialize";
 
 export const createParty = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.auth!.userId;

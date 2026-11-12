@@ -1,7 +1,7 @@
 import type { CookieOptions, Response } from "express";
 import jwt, { type SignOptions } from "jsonwebtoken";
-import { env } from "../config/env.js";
-import type { AuthPayload } from "../middleware/auth.js";
+import { env } from "../config/env";
+import type { AuthPayload } from "../middleware/auth";
 
 export function cookieOptions(): CookieOptions {
   const isProd = env.nodeEnv === "production";

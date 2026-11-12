@@ -3,15 +3,15 @@ import cors from "cors";
 import express, { type RequestHandler } from "express";
 import helmet from "helmet";
 import morgan from "morgan";
-import { env } from "./config/env.js";
-import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
-import authRoutes from "./routes/auth.routes.js";
-import dashboardRoutes from "./routes/dashboard.routes.js";
-import historyRoutes from "./routes/history.routes.js";
-import partyRoutes from "./routes/party.routes.js";
-import sparePartRoutes from "./routes/sparePart.routes.js";
-import transactionRoutes from "./routes/transaction.routes.js";
-import vehicleRoutes from "./routes/vehicle.routes.js";
+import { env } from "./config/env";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
+import authRoutes from "./routes/auth.routes";
+import dashboardRoutes from "./routes/dashboard.routes";
+import historyRoutes from "./routes/history.routes";
+import partyRoutes from "./routes/party.routes";
+import sparePartRoutes from "./routes/sparePart.routes";
+import transactionRoutes from "./routes/transaction.routes";
+import vehicleRoutes from "./routes/vehicle.routes";
 
 const applyHelmet = (
   helmet as unknown as { default?: () => RequestHandler } & (() => RequestHandler)

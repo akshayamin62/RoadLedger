@@ -1,10 +1,10 @@
 import type { Request, Response } from "express";
-import { ActivityLog } from "../models/ActivityLog.js";
-import { paginated } from "../utils/apiResponse.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { endOfDay, startOfDay } from "../utils/dates.js";
-import { escapeRegex, parsePagination } from "../utils/pagination.js";
-import { serializeActivity } from "../utils/serialize.js";
+import { ActivityLog } from "../models/ActivityLog";
+import { paginated } from "../utils/apiResponse";
+import { asyncHandler } from "../utils/asyncHandler";
+import { endOfDay, startOfDay } from "../utils/dates";
+import { escapeRegex, parsePagination } from "../utils/pagination";
+import { serializeActivity } from "../utils/serialize";
 
 export const listHistory = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.auth!.userId;

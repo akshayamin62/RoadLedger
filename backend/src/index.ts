@@ -1,8 +1,8 @@
-import app from "./app.js";
-import { connectDatabase } from "./config/db.js";
-import { env } from "./config/env.js";
-import { migratePartyGstIndex } from "./scripts/migratePartyGstIndex.js";
-import { migrateSparePartPayments } from "./scripts/migrateSparePayments.js";
+import app from "./app";
+import { connectDatabase } from "./config/db";
+import { env } from "./config/env";
+import { migratePartyGstIndex } from "./scripts/migratePartyGstIndex";
+import { migrateSparePartPayments } from "./scripts/migrateSparePayments";
 
 async function start() {
   await connectDatabase();

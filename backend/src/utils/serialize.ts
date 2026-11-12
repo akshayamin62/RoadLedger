@@ -1,10 +1,10 @@
-import type { ActivityLogDocument } from "../models/ActivityLog.js";
-import type { PartyDocument } from "../models/Party.js";
-import type { SparePartDocument } from "../models/SparePart.js";
-import type { TransactionDocument } from "../models/Transaction.js";
-import type { UserDocument } from "../models/User.js";
-import type { VehicleDocument } from "../models/Vehicle.js";
-import { paiseToRupees } from "./money.js";
+import type { ActivityLogDocument } from "../models/ActivityLog";
+import type { PartyDocument } from "../models/Party";
+import type { SparePartDocument } from "../models/SparePart";
+import type { TransactionDocument } from "../models/Transaction";
+import type { UserDocument } from "../models/User";
+import type { VehicleDocument } from "../models/Vehicle";
+import { paiseToRupees } from "./money";
 
 export function serializeUser(user: UserDocument) {
   return {

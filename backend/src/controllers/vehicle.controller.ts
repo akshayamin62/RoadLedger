@@ -1,12 +1,12 @@
 import type { Request, Response } from "express";
-import { Transaction } from "../models/Transaction.js";
-import { Vehicle } from "../models/Vehicle.js";
-import { logActivity } from "../services/activity.service.js";
-import { success, paginated } from "../utils/apiResponse.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { ConflictError, NotFoundError } from "../utils/httpError.js";
-import { escapeRegex, parsePagination } from "../utils/pagination.js";
-import { serializeVehicle } from "../utils/serialize.js";
+import { Transaction } from "../models/Transaction";
+import { Vehicle } from "../models/Vehicle";
+import { logActivity } from "../services/activity.service";
+import { success, paginated } from "../utils/apiResponse";
+import { asyncHandler } from "../utils/asyncHandler";
+import { ConflictError, NotFoundError } from "../utils/httpError";
+import { escapeRegex, parsePagination } from "../utils/pagination";
+import { serializeVehicle } from "../utils/serialize";
 
 export const createVehicle = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.auth!.userId;

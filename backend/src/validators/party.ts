@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { COMPANIES } from "../models/Party.js";
-import { optionalGstSchema } from "./common.js";
+import { COMPANIES } from "../models/Party";
+import { optionalGstSchema } from "./common";
 
 export const partyBodySchema = z.object({
   name: z.string().trim().min(2).max(120),

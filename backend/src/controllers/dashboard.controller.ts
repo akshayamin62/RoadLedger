@@ -1,13 +1,13 @@
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
-import { Party } from "../models/Party.js";
-import { SparePart } from "../models/SparePart.js";
-import { Transaction } from "../models/Transaction.js";
-import { Vehicle } from "../models/Vehicle.js";
-import { success } from "../utils/apiResponse.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { endOfDay, monthKey, startOfDay } from "../utils/dates.js";
-import { serializeSparePart, serializeTransaction } from "../utils/serialize.js";
+import { Party } from "../models/Party";
+import { SparePart } from "../models/SparePart";
+import { Transaction } from "../models/Transaction";
+import { Vehicle } from "../models/Vehicle";
+import { success } from "../utils/apiResponse";
+import { asyncHandler } from "../utils/asyncHandler";
+import { endOfDay, monthKey, startOfDay } from "../utils/dates";
+import { serializeSparePart, serializeTransaction } from "../utils/serialize";
 
 function rangeFilter(query: Request["query"]) {
   const fromDate = query.fromDate ? startOfDay(new Date(String(query.fromDate))) : undefined;

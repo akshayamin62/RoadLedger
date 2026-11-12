@@ -3,8 +3,8 @@ import {
   ActivityLog,
   type ActivityAction,
   type ActivityModule,
-} from "../models/ActivityLog.js";
-import { nextSequence } from "../models/Counter.js";
+} from "../models/ActivityLog";
+import { nextSequence } from "../models/Counter";
 
 export async function logActivity(input: {
   userId: Types.ObjectId | string;

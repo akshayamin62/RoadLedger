@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { VEHICLE_TYPES } from "../models/Vehicle.js";
-import { objectIdSchema, vehicleNumberSchema } from "./common.js";
+import { VEHICLE_TYPES } from "../models/Vehicle";
+import { objectIdSchema, vehicleNumberSchema } from "./common";
 
 export const vehicleBodySchema = z.object({
   vehicleType: z.enum(VEHICLE_TYPES),

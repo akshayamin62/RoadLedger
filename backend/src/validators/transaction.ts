@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { COMPANIES } from "../models/Party.js";
-import { PAYMENT_MODES, PAYMENT_STATUSES } from "../models/Transaction.js";
-import { objectIdSchema, optionalRupeeAmountSchema, rupeeAmountSchema } from "./common.js";
+import { COMPANIES } from "../models/Party";
+import { PAYMENT_MODES, PAYMENT_STATUSES } from "../models/Transaction";
+import { objectIdSchema, optionalRupeeAmountSchema, rupeeAmountSchema } from "./common";
 
 export const paymentInputSchema = z.object({
   amount: rupeeAmountSchema,

@@ -1,8 +1,8 @@
 import type { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
 import { ZodError } from "zod";
-import { env } from "../config/env.js";
-import { HttpError } from "../utils/httpError.js";
+import { env } from "../config/env";
+import { HttpError } from "../utils/httpError";
 
 export function notFoundHandler(_req: Request, res: Response) {
   res.status(404).json({ success: false, message: "Route not found" });

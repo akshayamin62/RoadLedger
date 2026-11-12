@@ -1,13 +1,13 @@
 import bcrypt from "bcryptjs";
 import type { Request, Response } from "express";
-import { env } from "../config/env.js";
-import { User } from "../models/User.js";
-import { logActivity } from "../services/activity.service.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { success } from "../utils/apiResponse.js";
-import { clearAuthCookie, setAuthCookie } from "../utils/cookie.js";
-import { ConflictError, UnauthorizedError } from "../utils/httpError.js";
-import { serializeUser } from "../utils/serialize.js";
+import { env } from "../config/env";
+import { User } from "../models/User";
+import { logActivity } from "../services/activity.service";
+import { asyncHandler } from "../utils/asyncHandler";
+import { success } from "../utils/apiResponse";
+import { clearAuthCookie, setAuthCookie } from "../utils/cookie";
+import { ConflictError, UnauthorizedError } from "../utils/httpError";
+import { serializeUser } from "../utils/serialize";
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const { name, email, password } = req.body as {

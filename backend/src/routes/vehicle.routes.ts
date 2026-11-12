@@ -5,10 +5,10 @@ import {
   getVehicle,
   listVehicles,
   updateVehicle,
-} from "../controllers/vehicle.controller.js";
-import { requireAuth } from "../middleware/auth.js";
-import { validate } from "../middleware/validate.js";
-import { idParamsSchema, vehicleBodySchema, vehicleQuerySchema } from "../validators/vehicle.js";
+} from "../controllers/vehicle.controller";
+import { requireAuth } from "../middleware/auth";
+import { validate } from "../middleware/validate";
+import { idParamsSchema, vehicleBodySchema, vehicleQuerySchema } from "../validators/vehicle";
 
 const router = Router();
 router.use(requireAuth);

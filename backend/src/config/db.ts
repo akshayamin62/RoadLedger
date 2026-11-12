@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { env } from "./env.js";
+import { env } from "./env";
 
 type GlobalMongo = typeof globalThis & {
   __roadledgerMongoPromise?: Promise<typeof mongoose>;

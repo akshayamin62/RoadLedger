@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
-import { connectDatabase } from "../config/db.js";
-import { env } from "../config/env.js";
-import { User } from "../models/User.js";
+import { connectDatabase } from "../config/db";
+import { env } from "../config/env";
+import { User } from "../models/User";
 
 async function seed() {
   await connectDatabase();

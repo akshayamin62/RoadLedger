@@ -160,8 +160,9 @@ npm run seed
 
 | Problem | Fix |
 | --- | --- |
-| `tsc: command not found` | Backend Vercel build should not run `npm run build`. Use `api/index.ts` serverless entry. |
-| `/api/health` 500 | Check `MONGODB_URI` / `JWT_SECRET` in backend env |
+| `tsc: command not found` | Build Command override = `npm run vercel-build` |
+| `FUNCTION_INVOCATION_FAILED` / 500 | 1) Set `MONGODB_URI` + `JWT_SECRET` in Vercel env 2) Atlas Network Access allow `0.0.0.0/0` 3) Redeploy latest code |
+| `/api/health` 500 with Mongo error | Atlas IP allowlist or wrong URI/password |
 | Frontend login fails | Set backend `FRONTEND_ORIGIN` to exact frontend Vercel URL and redeploy |
 | CORS errors | Same as above; both must be HTTPS |
 | Wrong project built | Backend root = `backend`, frontend root = `frontend` |

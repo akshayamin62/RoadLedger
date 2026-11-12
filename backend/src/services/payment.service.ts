@@ -1,5 +1,5 @@
-import type { SparePartDocument } from "../models/SparePart.js";
-import type { PaymentEntry, PaymentStatus, TransactionDocument } from "../models/Transaction.js";
+import type { SparePartDocument } from "../models/SparePart";
+import type { PaymentEntry, PaymentStatus, TransactionDocument } from "../models/Transaction";
 
 export function computePaymentTotals(
   billAmountPaise: number,

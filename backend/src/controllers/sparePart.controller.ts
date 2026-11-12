@@ -1,16 +1,16 @@
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
-import { SparePart } from "../models/SparePart.js";
-import type { PaymentMode } from "../models/Transaction.js";
-import { logActivity } from "../services/activity.service.js";
-import { applySparePaymentTotals, emptyPaymentModeBreakdown } from "../services/payment.service.js";
-import { success } from "../utils/apiResponse.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { endOfDay, monthKey, startOfDay } from "../utils/dates.js";
-import { BadRequestError, NotFoundError } from "../utils/httpError.js";
-import { rupeesToPaise } from "../utils/money.js";
-import { escapeRegex, parsePagination } from "../utils/pagination.js";
-import { serializeSparePart } from "../utils/serialize.js";
+import { SparePart } from "../models/SparePart";
+import type { PaymentMode } from "../models/Transaction";
+import { logActivity } from "../services/activity.service";
+import { applySparePaymentTotals, emptyPaymentModeBreakdown } from "../services/payment.service";
+import { success } from "../utils/apiResponse";
+import { asyncHandler } from "../utils/asyncHandler";
+import { endOfDay, monthKey, startOfDay } from "../utils/dates";
+import { BadRequestError, NotFoundError } from "../utils/httpError";
+import { rupeesToPaise } from "../utils/money";
+import { escapeRegex, parsePagination } from "../utils/pagination";
+import { serializeSparePart } from "../utils/serialize";
 
 export const createSparePart = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.auth!.userId;

@@ -5,11 +5,11 @@ import {
   getParty,
   listParties,
   updateParty,
-} from "../controllers/party.controller.js";
-import { requireAuth } from "../middleware/auth.js";
-import { validate } from "../middleware/validate.js";
-import { partyBodySchema, partyQuerySchema } from "../validators/party.js";
-import { idParamsSchema } from "../validators/vehicle.js";
+} from "../controllers/party.controller";
+import { requireAuth } from "../middleware/auth";
+import { validate } from "../middleware/validate";
+import { partyBodySchema, partyQuerySchema } from "../validators/party";
+import { idParamsSchema } from "../validators/vehicle";
 
 const router = Router();
 router.use(requireAuth);

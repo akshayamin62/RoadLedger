@@ -4,7 +4,7 @@ import {
   paymentSchema,
   type PaymentEntry,
   type PaymentStatus,
-} from "./Transaction.js";
+} from "./Transaction";
 
 export interface SparePartDocument extends mongoose.Document {
   userId: Types.ObjectId;

@@ -1,5 +1,5 @@
-import { SparePart } from "../models/SparePart.js";
-import { applySparePaymentTotals } from "../services/payment.service.js";
+import { SparePart } from "../models/SparePart";
+import { applySparePaymentTotals } from "../services/payment.service";
 
 export async function migrateSparePartPayments(): Promise<void> {
   const parts = await SparePart.find({
