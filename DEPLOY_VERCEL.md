@@ -1,23 +1,47 @@
-# Deploy RoadLedger on Vercel
+# Deploy RoadLedger on Vercel (Frontend)
 
-RoadLedger has two parts:
+Your build failed because Vercel built the **backend** (`roadledger-backend` / `tsc`), not the **frontend** (`Next.js`).
 
-- **Frontend:** Next.js app (deploy to Vercel)
-- **Backend:** Express + MongoDB API (deploy separately; Vercel is not ideal for a long-running Express API with MongoDB sessions)
-
-Recommended production setup:
-
-1. Deploy the **frontend** to Vercel
-2. Deploy the **backend** to a Node host (Railway, Render, Fly.io, or a VPS)
-3. Use **MongoDB Atlas** for the database
+Vercel should only host the **frontend**. The Express API must run elsewhere (Render / Railway / Fly.io / VPS) with MongoDB Atlas.
 
 ---
 
-## 1. Prepare MongoDB Atlas
+## Why your build failed
 
-1. Create a free cluster at [MongoDB Atlas](https://www.mongodb.com/atlas).
-2. Create a database user and allow network access from your backend host (or `0.0.0.0/0` for testing).
-3. Copy the connection string, for example:
+Log line:
+
+```text
+> roadledger-backend@1.0.0 build
+> tsc -p tsconfig.json
+```
+
+That means **Root Directory = `backend`** (or repo root with wrong settings).
+
+You must set:
+
+```text
+Root Directory = frontend
+```
+
+---
+
+## Architecture
+
+```text
+Browser
+  → https://your-app.vercel.app          (Next.js on Vercel)
+       → /api/* rewrite to BACKEND_URL
+            → https://your-api.onrender.com  (Express API)
+                 → MongoDB Atlas
+```
+
+---
+
+## Step 1 — MongoDB Atlas
+
+1. Create a cluster at [MongoDB Atlas](https://www.mongodb.com/atlas)
+2. Create DB user + network access
+3. Copy URI, example:
 
 ```text
 mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/roadledger?retryWrites=true&w=majority
@@ -25,209 +49,163 @@ mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/roadledger?retryWrites=tr
 
 ---
 
-## 2. Deploy the backend (required before Vercel frontend)
+## Step 2 — Deploy backend first (not on Vercel)
 
-Use any Node-friendly host. Example with Render/Railway:
+Use **Render**, **Railway**, or **Fly.io**.
 
-### Environment variables (backend)
+### Backend env vars
 
-| Variable | Example / notes |
-| --- | --- |
-| `PORT` | Provided by host, or `5000` |
-| `NODE_ENV` | `production` |
-| `MONGODB_URI` | Atlas URI from step 1 |
-| `JWT_SECRET` | Long random secret |
-| `JWT_EXPIRES_IN` | `7d` |
-| `FRONTEND_ORIGIN` | Your Vercel URL, e.g. `https://roadledger.vercel.app` |
-| `COOKIE_NAME` | `roadledger_token` |
-| `BCRYPT_SALT_ROUNDS` | `12` |
+```env
+PORT=5000
+NODE_ENV=production
+MONGODB_URI=mongodb+srv://...
+JWT_SECRET=put-a-long-random-secret-here
+JWT_EXPIRES_IN=7d
+FRONTEND_ORIGIN=https://YOUR-APP.vercel.app
+COOKIE_NAME=roadledger_token
+BCRYPT_SALT_ROUNDS=12
+```
 
-### Start command
+### Backend start
 
 ```bash
 cd backend
 npm install
 npm run build
+npm run seed
 npm start
 ```
 
-Optional seed (run once):
+### Verify
 
-```bash
-npm run seed
-```
-
-Confirm health:
+Open:
 
 ```text
-GET https://YOUR-BACKEND-URL/api/health
+https://YOUR-BACKEND-URL/api/health
 ```
 
-Expected:
+Should return:
 
 ```json
 { "success": true, "message": "RoadLedger API is running" }
 ```
 
+Save this backend URL. Example: `https://roadledger-api.onrender.com`
+
 ---
 
-## 3. Deploy the frontend on Vercel
+## Step 3 — Deploy frontend on Vercel (correct settings)
 
-### Option A — Vercel Dashboard
+### A. Import project
 
-1. Push this repo to GitHub/GitLab/Bitbucket.
-2. Open [Vercel](https://vercel.com) → **Add New Project** → import the repo.
-3. Configure the project:
-   - **Root Directory:** `frontend`
-   - **Framework Preset:** Next.js
-   - **Build Command:** `npm run build`
-   - **Output Directory:** leave default (`.next`)
-   - **Install Command:** `npm install`
-4. Add environment variables:
+1. Push latest code to GitHub
+2. Go to [vercel.com](https://vercel.com) → **Add New…** → **Project**
+3. Import `akshayamin62/RoadLedger`
+
+### B. Configure project (critical)
+
+| Setting | Value |
+| --- | --- |
+| **Root Directory** | `frontend`  ← click Edit and select this |
+| Framework Preset | Next.js |
+| Build Command | `npm run build` |
+| Install Command | `npm install` |
+| Output Directory | leave default |
+
+Do **not** leave Root Directory as `.` or `backend`.
+
+### C. Environment variables (Frontend)
+
+In Vercel → Project → Settings → Environment Variables:
 
 | Name | Value |
 | --- | --- |
 | `BACKEND_URL` | `https://YOUR-BACKEND-URL` (no trailing slash) |
 | `NEXT_PUBLIC_APP_NAME` | `RoadLedger` |
 
-5. Click **Deploy**.
+Example:
 
-### Option B — Vercel CLI
-
-```bash
-npm i -g vercel
-cd frontend
-vercel login
-vercel
+```text
+BACKEND_URL=https://roadledger-api.onrender.com
+NEXT_PUBLIC_APP_NAME=RoadLedger
 ```
 
-During setup:
+### D. Deploy
 
-- Set root to `frontend` if prompted from repo root
-- Add `BACKEND_URL` and `NEXT_PUBLIC_APP_NAME`
+Click **Deploy**.
 
-Production deploy:
+Expected successful log should show something like:
 
-```bash
-vercel --prod
+```text
+> roadledger-frontend@1.0.0 build
+> next build
 ```
+
+Not `roadledger-backend` / `tsc`.
 
 ---
 
-## 4. Cookie / CORS checklist (important)
+## Step 4 — Connect frontend ↔ backend
 
-Auth uses HTTP-only cookies across two domains (Vercel frontend + separate API).
-
-In **backend** production env:
+1. After Vercel gives you a URL, e.g. `https://roadledger.vercel.app`
+2. Update backend env:
 
 ```env
-NODE_ENV=production
-FRONTEND_ORIGIN=https://YOUR-FRONTEND.vercel.app
+FRONTEND_ORIGIN=https://roadledger.vercel.app
 ```
 
-In `backend/src/utils/cookie.ts`, production cookies already use:
+3. Restart/redeploy the backend
+4. Redeploy Vercel once if needed
+
+---
+
+## Step 5 — Test
+
+1. Open `https://YOUR-APP.vercel.app/login`
+2. Login or register
+3. Add vehicle / party / transaction
+4. Confirm data loads
+
+---
+
+## If you already created a wrong Vercel project
+
+1. Open the project → **Settings** → **General**
+2. **Root Directory** → Edit → set to `frontend`
+3. Save
+4. **Settings** → **Environment Variables** → add `BACKEND_URL`
+5. **Deployments** → Redeploy latest commit
+
+---
+
+## Cookie / CORS notes
+
+Production cookies use:
 
 - `secure: true`
 - `sameSite: "none"`
 
-So:
-
-1. Frontend must be HTTPS (Vercel provides this).
-2. Backend must be HTTPS.
-3. `FRONTEND_ORIGIN` must exactly match the Vercel URL (including `https://`, no trailing slash).
-
-If login works locally but fails on Vercel, first verify:
-
-- Browser Network tab shows `Set-Cookie` from login
-- Cookie has `Secure` + `SameSite=None`
-- API responses include CORS `Access-Control-Allow-Credentials: true`
+So both frontend and backend must be HTTPS, and `FRONTEND_ORIGIN` must match the Vercel URL exactly.
 
 ---
 
-## 5. Post-deploy verification
+## Checklist
 
-1. Open `https://YOUR-APP.vercel.app/login`
-2. Sign in with seeded admin or register a new account
-3. Create one vehicle, one party (GST optional), one transaction, one spare-part payment
-4. Confirm dashboard totals update
-5. Confirm logout clears the session
-
----
-
-## 6. Optional: monorepo tips
-
-If Vercel detects the repo root instead of `frontend`:
-
-1. Project Settings → **General** → **Root Directory** → `frontend`
-2. Redeploy
-
-Do **not** set the Vercel root to `backend`. The Express API should stay on a Node host.
+- [ ] MongoDB Atlas URI ready
+- [ ] Backend deployed and `/api/health` works
+- [ ] Vercel Root Directory = `frontend`
+- [ ] `BACKEND_URL` set on Vercel
+- [ ] Backend `FRONTEND_ORIGIN` set to Vercel URL
+- [ ] Login works on production URL
 
 ---
 
-## 7. Minimal architecture diagram
+## Quick fix for your current error
 
-```text
-Browser
-  └─ Vercel (Next.js frontend)
-       └─ /api/* rewrite → BACKEND_URL
-            └─ Railway/Render/Fly (Express API)
-                 └─ MongoDB Atlas
-```
+Your current log is building backend TypeScript. That is wrong for Vercel UI hosting.
 
-The frontend rewrite in `frontend/next.config.ts` forwards `/api/:path*` to `BACKEND_URL`, so the browser talks to the same Vercel origin and cookies remain first-party to that origin **only if** backend and frontend share a domain strategy.
+1. Change Root Directory to `frontend`
+2. Set `BACKEND_URL`
+3. Redeploy
 
-### If cookies fail across different domains
-
-Best production fix: put both behind one domain with paths/subdomains you control, or proxy the API through Vercel rewrites only and ensure the Set-Cookie domain matches the frontend host.
-
-Practical approach used by this project:
-
-- Browser calls `https://your-app.vercel.app/api/...`
-- Vercel rewrite forwards to `https://your-api.host/api/...`
-- Because the browser sees responses from `your-app.vercel.app`, configure the backend cookie carefully, **or** prefer hosting API under the same custom domain.
-
-Recommended custom domain setup:
-
-```text
-app.yourdomain.com      → Vercel frontend
-api.yourdomain.com      → Express backend
-```
-
-Then set:
-
-```env
-FRONTEND_ORIGIN=https://app.yourdomain.com
-BACKEND_URL=https://api.yourdomain.com
-```
-
-And update cookie `sameSite`/`secure` as needed for your domain policy.
-
----
-
-## 8. Troubleshooting
-
-| Issue | Fix |
-| --- | --- |
-| Build fails on Vercel | Confirm Root Directory is `frontend` |
-| API 404 from frontend | Check `BACKEND_URL` and that backend `/api/health` works |
-| Login always fails | Check `JWT_SECRET`, MongoDB URI, and CORS/`FRONTEND_ORIGIN` |
-| Cookie not saved | Ensure HTTPS + `SameSite=None` + matching frontend origin |
-| GST save errors for blank GST | Restart backend so the new optional GST index migration runs |
-
----
-
-## Quick command summary
-
-```bash
-# Backend host
-cd backend
-npm install
-npm run build
-npm run seed
-npm start
-
-# Frontend on Vercel
-cd frontend
-vercel --prod
-```
+Backend itself should be deployed on Render/Railway, not as the Vercel root app.

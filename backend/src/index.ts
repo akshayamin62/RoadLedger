@@ -1,8 +1,12 @@
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import express from "express";
+import express, { type RequestHandler } from "express";
 import helmet from "helmet";
 import morgan from "morgan";
+
+const applyHelmet = (helmet as unknown as { default?: () => RequestHandler } & (() => RequestHandler)).default
+  ? (helmet as unknown as { default: () => RequestHandler }).default
+  : (helmet as unknown as () => RequestHandler);
 import { connectDatabase } from "./config/db.js";
 import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
@@ -19,7 +23,7 @@ import vehicleRoutes from "./routes/vehicle.routes.js";
 const app = express();
 
 app.set("trust proxy", 1);
-app.use(helmet());
+app.use(applyHelmet());
 app.use(
   cors({
     origin: env.frontendOrigin,
