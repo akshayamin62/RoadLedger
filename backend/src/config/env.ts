@@ -13,8 +13,12 @@ function required(name: string): string {
 export const env = {
   port: Number(process.env.PORT ?? 5000),
   nodeEnv: process.env.NODE_ENV ?? "development",
-  mongoUri: required("MONGODB_URI"),
-  jwtSecret: required("JWT_SECRET"),
+  get mongoUri() {
+    return required("MONGODB_URI");
+  },
+  get jwtSecret() {
+    return required("JWT_SECRET");
+  },
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "7d",
   frontendOrigin: process.env.FRONTEND_ORIGIN ?? "http://localhost:3000",
   cookieName: process.env.COOKIE_NAME ?? "roadledger_token",

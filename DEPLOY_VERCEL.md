@@ -1,47 +1,20 @@
-# Deploy RoadLedger on Vercel (Frontend)
+# Deploy RoadLedger on Vercel
 
-Your build failed because Vercel built the **backend** (`roadledger-backend` / `tsc`), not the **frontend** (`Next.js`).
+You need **two Vercel projects** from the same GitHub repo:
 
-Vercel should only host the **frontend**. The Express API must run elsewhere (Render / Railway / Fly.io / VPS) with MongoDB Atlas.
+1. **Backend API** → Root Directory = `backend`
+2. **Frontend app** → Root Directory = `frontend`
 
----
-
-## Why your build failed
-
-Log line:
-
-```text
-> roadledger-backend@1.0.0 build
-> tsc -p tsconfig.json
-```
-
-That means **Root Directory = `backend`** (or repo root with wrong settings).
-
-You must set:
-
-```text
-Root Directory = frontend
-```
+Plus **MongoDB Atlas** for the database.
 
 ---
 
-## Architecture
+## Part A — MongoDB Atlas (required)
 
-```text
-Browser
-  → https://your-app.vercel.app          (Next.js on Vercel)
-       → /api/* rewrite to BACKEND_URL
-            → https://your-api.onrender.com  (Express API)
-                 → MongoDB Atlas
-```
-
----
-
-## Step 1 — MongoDB Atlas
-
-1. Create a cluster at [MongoDB Atlas](https://www.mongodb.com/atlas)
-2. Create DB user + network access
-3. Copy URI, example:
+1. Create a free cluster at [MongoDB Atlas](https://www.mongodb.com/atlas)
+2. Database Access → create user
+3. Network Access → allow `0.0.0.0/0`
+4. Connect → copy URI:
 
 ```text
 mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/roadledger?retryWrites=true&w=majority
@@ -49,163 +22,156 @@ mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/roadledger?retryWrites=tr
 
 ---
 
-## Step 2 — Deploy backend first (not on Vercel)
+## Part B — Deploy BACKEND on Vercel
 
-Use **Render**, **Railway**, or **Fly.io**.
+### 1. Create project
 
-### Backend env vars
+- Vercel → **Add New Project**
+- Import `akshayamin62/RoadLedger`
 
-```env
-PORT=5000
-NODE_ENV=production
-MONGODB_URI=mongodb+srv://...
-JWT_SECRET=put-a-long-random-secret-here
-JWT_EXPIRES_IN=7d
-FRONTEND_ORIGIN=https://YOUR-APP.vercel.app
-COOKIE_NAME=roadledger_token
-BCRYPT_SALT_ROUNDS=12
-```
+### 2. Fill the Configure Project form exactly like this
 
-### Backend start
+| Field | Value |
+| --- | --- |
+| **Project Name** | `roadledger-api` (any name) |
+| **Root Directory** | `backend` |
+| **Framework Preset** | **Other** (or leave detected) |
+| **Build Command** | **Override ON** → leave empty, or put `echo "vercel-node build"` |
+| **Output Directory** | Off / empty |
+| **Install Command** | Off (default `npm install`) |
+
+Important: because this backend uses `api/index.ts` + `vercel.json`, Vercel compiles it with `@vercel/node`.  
+Do **not** rely on `npm run build` / `tsc` for the Vercel backend project.
+
+If Vercel forces a build command, set override to:
 
 ```bash
-cd backend
 npm install
-npm run build
-npm run seed
-npm start
 ```
 
-### Verify
+### 3. Environment Variables (backend project)
 
-Open:
+| Key | Value |
+| --- | --- |
+| `MONGODB_URI` | your Atlas URI |
+| `JWT_SECRET` | long random secret |
+| `JWT_EXPIRES_IN` | `7d` |
+| `FRONTEND_ORIGIN` | temporarily `http://localhost:3000` (update after frontend deploy) |
+| `COOKIE_NAME` | `roadledger_token` |
+| `BCRYPT_SALT_ROUNDS` | `12` |
+| `NODE_ENV` | `production` |
+
+### 4. Deploy
+
+Click **Deploy**.
+
+When done, open:
 
 ```text
-https://YOUR-BACKEND-URL/api/health
+https://YOUR-BACKEND.vercel.app/api/health
 ```
 
-Should return:
+Expected:
 
 ```json
 { "success": true, "message": "RoadLedger API is running" }
 ```
 
-Save this backend URL. Example: `https://roadledger-api.onrender.com`
+Save this URL as your backend URL.
 
 ---
 
-## Step 3 — Deploy frontend on Vercel (correct settings)
+## Part C — Deploy FRONTEND on Vercel
 
-### A. Import project
+### 1. Create a second project
 
-1. Push latest code to GitHub
-2. Go to [vercel.com](https://vercel.com) → **Add New…** → **Project**
-3. Import `akshayamin62/RoadLedger`
+- Vercel → **Add New Project** again
+- Same repo `akshayamin62/RoadLedger`
 
-### B. Configure project (critical)
+### 2. Configure form
 
-| Setting | Value |
+| Field | Value |
 | --- | --- |
-| **Root Directory** | `frontend`  ← click Edit and select this |
-| Framework Preset | Next.js |
-| Build Command | `npm run build` |
-| Install Command | `npm install` |
-| Output Directory | leave default |
+| **Project Name** | `roadledger` |
+| **Root Directory** | `frontend` |
+| **Framework Preset** | **Next.js** |
+| **Build Command** | default (`npm run build`) |
+| **Output Directory** | default |
+| **Install Command** | default |
 
-Do **not** leave Root Directory as `.` or `backend`.
+### 3. Environment Variables (frontend project)
 
-### C. Environment variables (Frontend)
-
-In Vercel → Project → Settings → Environment Variables:
-
-| Name | Value |
+| Key | Value |
 | --- | --- |
-| `BACKEND_URL` | `https://YOUR-BACKEND-URL` (no trailing slash) |
+| `BACKEND_URL` | `https://YOUR-BACKEND.vercel.app` |
 | `NEXT_PUBLIC_APP_NAME` | `RoadLedger` |
 
-Example:
+### 4. Deploy frontend
+
+After it succeeds, copy frontend URL, e.g. `https://roadledger.vercel.app`
+
+---
+
+## Part D — Connect both projects
+
+1. Go to **backend** Vercel project → Settings → Environment Variables
+2. Update:
 
 ```text
-BACKEND_URL=https://roadledger-api.onrender.com
-NEXT_PUBLIC_APP_NAME=RoadLedger
+FRONTEND_ORIGIN=https://YOUR-FRONTEND.vercel.app
 ```
 
-### D. Deploy
+3. Redeploy backend
+4. Open frontend URL → login/register
 
-Click **Deploy**.
+---
 
-Expected successful log should show something like:
+## Exact values for your current backend form
 
-```text
-> roadledger-frontend@1.0.0 build
-> next build
+From your screenshot, change to:
+
+- **Root Directory:** `backend` (OK for backend project)
+- **Framework Preset:** Other / no Express build needed
+- **Build Command override:** ON, value blank or `npm install`
+- **Output Directory:** Off
+- **Install Command:** Off
+- **Environment Variables:** add `MONGODB_URI`, `JWT_SECRET`, `FRONTEND_ORIGIN`, `NODE_ENV=production`, etc.
+
+Then Deploy.
+
+---
+
+## Seed admin user
+
+After backend is live, either:
+
+- Use `/register` in the frontend, or
+- Run seed locally against Atlas:
+
+```bash
+cd backend
+# put the same MONGODB_URI in .env
+npm run seed
 ```
 
-Not `roadledger-backend` / `tsc`.
+---
+
+## Troubleshooting
+
+| Problem | Fix |
+| --- | --- |
+| `tsc: command not found` | Backend Vercel build should not run `npm run build`. Use `api/index.ts` serverless entry. |
+| `/api/health` 500 | Check `MONGODB_URI` / `JWT_SECRET` in backend env |
+| Frontend login fails | Set backend `FRONTEND_ORIGIN` to exact frontend Vercel URL and redeploy |
+| CORS errors | Same as above; both must be HTTPS |
+| Wrong project built | Backend root = `backend`, frontend root = `frontend` |
 
 ---
 
-## Step 4 — Connect frontend ↔ backend
+## Summary
 
-1. After Vercel gives you a URL, e.g. `https://roadledger.vercel.app`
-2. Update backend env:
-
-```env
-FRONTEND_ORIGIN=https://roadledger.vercel.app
-```
-
-3. Restart/redeploy the backend
-4. Redeploy Vercel once if needed
-
----
-
-## Step 5 — Test
-
-1. Open `https://YOUR-APP.vercel.app/login`
-2. Login or register
-3. Add vehicle / party / transaction
-4. Confirm data loads
-
----
-
-## If you already created a wrong Vercel project
-
-1. Open the project → **Settings** → **General**
-2. **Root Directory** → Edit → set to `frontend`
-3. Save
-4. **Settings** → **Environment Variables** → add `BACKEND_URL`
-5. **Deployments** → Redeploy latest commit
-
----
-
-## Cookie / CORS notes
-
-Production cookies use:
-
-- `secure: true`
-- `sameSite: "none"`
-
-So both frontend and backend must be HTTPS, and `FRONTEND_ORIGIN` must match the Vercel URL exactly.
-
----
-
-## Checklist
-
-- [ ] MongoDB Atlas URI ready
-- [ ] Backend deployed and `/api/health` works
-- [ ] Vercel Root Directory = `frontend`
-- [ ] `BACKEND_URL` set on Vercel
-- [ ] Backend `FRONTEND_ORIGIN` set to Vercel URL
-- [ ] Login works on production URL
-
----
-
-## Quick fix for your current error
-
-Your current log is building backend TypeScript. That is wrong for Vercel UI hosting.
-
-1. Change Root Directory to `frontend`
-2. Set `BACKEND_URL`
-3. Redeploy
-
-Backend itself should be deployed on Render/Railway, not as the Vercel root app.
+1. Atlas DB ready  
+2. Vercel project #1 → `backend` + env vars → test `/api/health`  
+3. Vercel project #2 → `frontend` + `BACKEND_URL`  
+4. Set backend `FRONTEND_ORIGIN` to frontend URL  
+5. Redeploy backend and test login  
